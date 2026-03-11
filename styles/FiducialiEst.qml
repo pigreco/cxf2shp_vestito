@@ -1,0 +1,1 @@
+Fiduciali.qml

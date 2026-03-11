@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<style>
+  body  { font-family: Segoe UI, Arial, sans-serif; font-size: 10pt; margin: 8px; }
+  h2    { color: #2e7d32; margin-top: 14px; margin-bottom: 4px; }
+  h3    { color: #444; margin-top: 10px; margin-bottom: 2px; }
+  p, li { margin: 3px 0; line-height: 1.5; }
+  code  { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 9pt; }
+  table { border-collapse: collapse; width: 100%; margin-top: 6px; }
+  th    { background: #e8f5e9; text-align: left; padding: 4px 8px; }
+  td    { padding: 3px 8px; border-bottom: 1px solid #e0e0e0; }
+</style>
+</head>
+<body>
+
+<h2>Cos'è il plugin</h2>
+<p>
+<b>CXF to Shapefile Vestito</b> converte i file <b>CXF</b> (formato vettoriale del
+Catasto Italiano, distribuiti dall'<i>Agenzia delle Entrate</i>) in
+<b>ESRI Shapefile</b> o <b>GeoPackage</b>, caricandoli in QGIS con stili QML
+preconfigurati (colori, tratteggi, simboli catastali).
+</p>
+
+<h2>Come si usa</h2>
+<ol>
+  <li><b>Cartella sorgente</b> — seleziona la cartella che contiene i file <code>.cxf</code>
+      (anche più file per fogli diversi dello stesso comune).</li>
+  <li><b>Formato output</b> — scegli <i>ESRI Shapefile</i> (un file per layer) oppure
+      <i>GeoPackage</i> (tutti i layer in un unico file <code>catasto.gpkg</code>).</li>
+  <li><b>Cartella output</b> — lascia vuoto per usare la sottocartella automatica
+      (<code>shape/</code> o <code>catasto/</code> dentro la cartella CXF),
+      oppure scegli una cartella personalizzata.</li>
+  <li>Spunta <i>Carica i layer nel progetto QGIS</i> per vederli subito in mappa.</li>
+  <li>Clicca <b>&#9654; Avvia Conversione</b>.</li>
+</ol>
+
+<h2>CXF moderni vs storici (Cassini-Soldner)</h2>
+<p>I file CXF esistono in due varianti di sistema di riferimento:</p>
+<table>
+  <tr><th>Tipo</th><th>Coordinate X tipiche</th><th>CRS</th></tr>
+  <tr><td>CXF moderni</td><td>1.400.000 – 1.900.000</td><td>Monte Mario (EPSG:3003/3004)</td></tr>
+  <tr><td>CXF storici</td><td>± poche migliaia di metri</td><td>Cassini-Soldner locale</td></tr>
+</table>
+<p>
+Se le coordinate sono piccole (catasto storico), espandi la sezione
+<b>Cassini-Soldner</b> e attiva la spunta: il plugin leggerà automaticamente
+l'origine del comune dal file <code>Italia_CS_PRJ_srtext.csv</code> incluso nel plugin
+e trasformerà le coordinate nel CRS target scelto.
+</p>
+
+<h2>Layer prodotti</h2>
+<table>
+  <tr><th>Layer</th><th>Tipo</th><th>Contenuto</th></tr>
+  <tr><td>Fogli</td><td>Poligono</td><td>Contorno del foglio di mappa</td></tr>
+  <tr><td>Particelle</td><td>Poligono</td><td>Particelle catastali (mappali)</td></tr>
+  <tr><td>Fabbricati</td><td>Poligono</td><td>Fabbricati (particelle con +)</td></tr>
+  <tr><td>Acque</td><td>Poligono</td><td>Corsi d'acqua</td></tr>
+  <tr><td>Strade</td><td>Poligono</td><td>Strade</td></tr>
+  <tr><td>LnVestizione</td><td>Linea</td><td>Linee di vestizione (interne)</td></tr>
+  <tr><td>LnVestEst</td><td>Linea</td><td>Linee di vestizione (esterne)</td></tr>
+  <tr><td>Simboli / SimboliEst</td><td>Punto</td><td>Simboli catastali con rotazione</td></tr>
+  <tr><td>Fiduciali / FiducialiEst</td><td>Punto</td><td>Punti fiduciali</td></tr>
+  <tr><td>Testi / TestiEst</td><td>Punto</td><td>Testi e annotazioni</td></tr>
+</table>
+<p>I layer con suffisso <i>Est</i> (esterni al foglio) vengono nascosti di default.</p>
+
+<h2>Note</h2>
+<ul>
+  <li>I file CXF si ottengono dal portale <b>Sister</b> dell'Agenzia delle Entrate
+      o dagli sportelli catastali comunali.</li>
+  <li>Gli stili QML sono salvati nella stessa cartella degli shapefile per
+      il ricaricamento automatico da QGIS.</li>
+  <li>In caso di errore controlla il <b>Log di esecuzione</b>: riporta il file,
+      il foglio e l'eventuale codice catastale non trovato nel CSV.</li>
+</ul>
+
+</body>
+</html>

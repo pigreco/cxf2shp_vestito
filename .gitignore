@@ -1,0 +1,16 @@
+# File CSV dati (non versionati)
+*.csv
+
+# Python
+*.pyc
+__pycache__/
+
+# QGIS
+*.qgs~
+*.qgz~
+
+# Distribuzione
+*.zip
+
+# Cartelle di lavoro
+styles_new/
