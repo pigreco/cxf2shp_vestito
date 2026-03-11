@@ -11,6 +11,7 @@ about=Plugin per la conversione di file CXF (formato catastale italiano Agenzia 
     Simboli, Fiduciali e Testi, organizzati nel gruppo "Catasto Vestito" in QGIS.
     Supporto CXF storici Cassini-Soldner con trasformazione automatica tramite tabella
     delle origini comunali bundled (Italia_CS_PRJ_srtext.csv, ~8.000 Comuni italiani).
+    Plugin sviluppato con il supporto di Claude AI (Anthropic).
 tracker=https://github.com/user/cxf2shp_vestito/issues
 repository=https://github.com/user/cxf2shp_vestito
 homepage=https://github.com/user/cxf2shp_vestito
