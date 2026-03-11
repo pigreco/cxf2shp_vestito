@@ -2,6 +2,8 @@
 
 Plugin QGIS per la conversione di file **CXF** (formato cartografico catastale italiano dell'Agenzia delle Entrate) in **Shapefile ESRI** o **GeoPackage** con stili QML preimpostati.
 
+![](gui.png)
+
 ## Autore
 Fortunato Amore
 
