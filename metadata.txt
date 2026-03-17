@@ -2,7 +2,7 @@
 name=CXF to Shape Vestito
 qgisMinimumVersion=3.20
 description=Converte file CXF catastali italiani in Shapefile o GeoPackage con stili preimpostati
-version=1.6
+version=1.7
 author=Salvatore Fiandaca
 email=pigrecoinfinito@gmail.com
 about=Plugin per la conversione di file CXF (formato catastale italiano Agenzia delle Entrate)
@@ -32,6 +32,7 @@ experimental=False
 deprecated=False
 server=False
 changelog=
+    1.7 Aggiunta descrizione in inglese nel metadata per maggiore accessibilità internazionale
     1.6 Pulsante "? Guida" nel dialogo (help.html esterno); plugin aggiunto al menu Plugin oltre che a Vettore
     1.5 Output GeoPackage, cartella output selezionabile, sezione CS in pannello avanzato collassabile
     1.4 Log codice catastale MAPPA, log PROJ string CS, warning duplicati CodCata, stili QML aggiornati QGIS 3.44.8
