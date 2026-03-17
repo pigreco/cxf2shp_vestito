@@ -12,6 +12,15 @@ about=Plugin per la conversione di file CXF (formato catastale italiano Agenzia 
     Supporto CXF storici Cassini-Soldner con trasformazione automatica tramite tabella
     delle origini comunali bundled (Italia_CS_PRJ_srtext.csv, ~8.000 Comuni italiani).
     Plugin sviluppato con il supporto di Claude AI (Anthropic).
+    
+    ENGLISH:
+    Plugin for converting Italian cadastral CXF files (Agenzia delle Entrate format)
+    to ESRI Shapefile or GeoPackage with preset QML styles for cadastral visualization.
+    Generates 12 layers: Sheets, Waters, Roads, Parcels, Buildings, Dressing Lines,
+    Symbols, Fiducials and Texts, organized in the "Catasto Vestito" group in QGIS.
+    Support for historical Cassini-Soldner CXF with automatic transformation via bundled
+    municipal origins table (Italia_CS_PRJ_srtext.csv, ~8,000 Italian Municipalities).
+    Plugin developed with Claude AI (Anthropic) support.
 tracker=https://github.com/pigreco/cxf2shp_vestito/issues
 repository=https://github.com/pigreco/cxf2shp_vestito
 homepage=https://github.com/pigreco/cxf2shp_vestito
