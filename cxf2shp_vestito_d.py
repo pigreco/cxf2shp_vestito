@@ -15,7 +15,7 @@ from qgis.PyQt.QtWidgets import (
     QMessageBox, QProgressBar, QGroupBox, QCheckBox,
     QTextEdit, QTextBrowser, QSizePolicy, QFrame, QComboBox, QWidget
 )
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QCoreApplication
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QFont, QColor, QPalette
 
 from qgis.core import (
@@ -24,7 +24,17 @@ from qgis.core import (
     QgsCoordinateTransformContext, QgsCoordinateTransform
 )
 from qgis.gui import QgsProjectionSelectionWidget, QgsCollapsibleGroupBox
-from qgis.PyQt.QtCore import QVariant
+
+# Compatibilità Qt5/Qt6: QMetaType sostituisce QVariant.Type in PyQt6
+try:
+    from qgis.PyQt.QtCore import QMetaType
+    _F_STR = QMetaType.Type.QString
+    _F_DBL = QMetaType.Type.Double
+    _F_INT = QMetaType.Type.Int
+except (ImportError, AttributeError):
+    _F_STR = QVariant.String
+    _F_DBL = QVariant.Double
+    _F_INT = QVariant.Int
 
 
 # =====================================================================
@@ -140,19 +150,19 @@ class ConversionThread(QThread):
             vl = QgsVectorLayer(f"{geom_type}?crs={crs}", name, "memory")
             pr = vl.dataProvider()
             fields = [
-                QgsField("COMUNE",   QVariant.String, len=4),
-                QgsField("SEZIONE",  QVariant.String, len=1),
-                QgsField("FOGLIO",   QVariant.String, len=4),
-                QgsField("ALLEGATO", QVariant.String, len=1),
-                QgsField("SVILUPPO", QVariant.String, len=1),
+                QgsField("COMUNE",   _F_STR, len=4),
+                QgsField("SEZIONE",  _F_STR, len=1),
+                QgsField("FOGLIO",   _F_STR, len=4),
+                QgsField("ALLEGATO", _F_STR, len=1),
+                QgsField("SVILUPPO", _F_STR, len=1),
             ]
             for f in extra_fields:
                 if f in ['ALTEZZA', 'ANGOLO']:
-                    fields.append(QgsField(f, QVariant.Double))
+                    fields.append(QgsField(f, _F_DBL))
                 elif f == 'CODICE':
-                    fields.append(QgsField(f, QVariant.Int))
+                    fields.append(QgsField(f, _F_INT))
                 else:
-                    fields.append(QgsField(f, QVariant.String, len=50))
+                    fields.append(QgsField(f, _F_STR, len=50))
             pr.addAttributes(fields)
             vl.updateFields()
             layers[name] = vl
@@ -441,19 +451,19 @@ class Cxf2ShpVestitoDialog(QDialog):
         font.setPointSize(13)
         font.setBold(True)
         title.setFont(font)
-        title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         main_layout.addWidget(title)
 
         subtitle = QLabel("Plugin per la conversione di file CXF (Agenzia delle Entrate) in Shapefile ESRI o GeoPackage con stili catastali")
-        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         subtitle.setWordWrap(True)
         subtitle.setStyleSheet("color: #555; font-size: 10px;")
         main_layout.addWidget(subtitle)
 
         # Separatore
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
-        sep.setFrameShadow(QFrame.Sunken)
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFrameShadow(QFrame.Shadow.Sunken)
         main_layout.addWidget(sep)
 
         # ---- Gruppo: Cartella input ----
@@ -557,7 +567,7 @@ class Cxf2ShpVestitoDialog(QDialog):
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
         self.txt_log.setMaximumHeight(110)
-        self.txt_log.setStyleSheet("font-size: 10px; font-family: Consolas, monospace; background: #f8f8f8;")
+        self.txt_log.setStyleSheet("QTextEdit { font-size: 10px; font-family: Consolas, monospace; background-color: #f8f8f8; color: #222222; }")
         log_layout.addWidget(self.txt_log)
         main_layout.addWidget(grp_log)
 

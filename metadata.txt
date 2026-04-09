@@ -1,8 +1,10 @@
 [general]
 name=CXF to Shape Vestito
 qgisMinimumVersion=3.20
+qgisMaximumVersion=4.99
 description=Converte file CXF catastali italiani in Shapefile o GeoPackage con stili preimpostati
-version=1.8
+version=1.9
+supportsQt6=True
 author=Salvatore Fiandaca
 email=pigrecoinfinito@gmail.com
 about=Plugin per la conversione di file CXF (formato catastale italiano Agenzia delle Entrate)
@@ -32,6 +34,7 @@ experimental=False
 deprecated=False
 server=False
 changelog=
+    1.9 Porting QGIS 4 / Qt6 / PyQt6: enum qualificati, QMetaType compat, supportsQt6=True, fix stylesheet tema scuro
     1.8 Fix struttura ZIP: aggiunta cartella radice richiesta da QGIS plugin repository
     1.7 Aggiunta descrizione in inglese nel metadata per maggiore accessibilità internazionale
     1.6 Pulsante "? Guida" nel dialogo (help.html esterno); plugin aggiunto al menu Plugin oltre che a Vettore
