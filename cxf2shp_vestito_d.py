@@ -457,7 +457,7 @@ class Cxf2ShpVestitoDialog(QDialog):
         subtitle = QLabel("Plugin per la conversione di file CXF (Agenzia delle Entrate) in Shapefile ESRI o GeoPackage con stili catastali")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         subtitle.setWordWrap(True)
-        subtitle.setStyleSheet("color: #555; font-size: 10px;")
+        subtitle.setStyleSheet("font-size: 10px;")
         main_layout.addWidget(subtitle)
 
         # Separatore
@@ -557,7 +557,7 @@ class Cxf2ShpVestitoDialog(QDialog):
             "Tutti i layer vengono inseriti nel gruppo  \"Catasto Vestito\"  con stili QML preimpostati."
         )
         info_lbl.setWordWrap(True)
-        info_lbl.setStyleSheet("font-size: 10px; color: #333;")
+        info_lbl.setStyleSheet("font-size: 10px;")
         info_layout.addWidget(info_lbl)
         main_layout.addWidget(grp_info)
 
