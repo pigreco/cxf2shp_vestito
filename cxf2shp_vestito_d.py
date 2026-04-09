@@ -433,7 +433,6 @@ class Cxf2ShpVestitoDialog(QDialog):
         self.thread = None
         self.setWindowTitle("CXF → Shapefile / GeoPackage Vestito  |  Catasto Italiano")
         self.setMinimumWidth(580)
-        self.setMinimumHeight(500)
         self._setup_ui()
 
     # ------------------------------------------------------------------
@@ -517,6 +516,7 @@ class Cxf2ShpVestitoDialog(QDialog):
         # ---- Opzioni avanzate: Cassini-Soldner ----
         grp_cs = QgsCollapsibleGroupBox("Cassini-Soldner (CXF catasto storico)")
         grp_cs.setCollapsed(True)
+        grp_cs.collapsedStateChanged.connect(lambda: self.adjustSize())
         cs_layout = QGridLayout(grp_cs)
 
         self.chk_cassini = QCheckBox(
