@@ -40,11 +40,21 @@ preconfigurati (colori, tratteggi, simboli catastali).
 <p>I file CXF esistono in due varianti di sistema di riferimento:</p>
 <table>
   <tr><th>Tipo</th><th>Coordinate X tipiche</th><th>CRS</th></tr>
-  <tr><td>CXF moderni</td><td>1.400.000 – 1.900.000</td><td>Monte Mario (EPSG:3003/3004)</td></tr>
+  <tr><td>CXF moderni</td><td>1.100.000 – 2.900.000</td><td>Monte Mario (EPSG:3003/3004) — autodetect</td></tr>
   <tr><td>CXF storici</td><td>± poche migliaia di metri</td><td>Cassini-Soldner locale</td></tr>
 </table>
 <p>
-Se le coordinate sono piccole (catasto storico), espandi la sezione
+<b>CXF moderni (Roma 40):</b> il plugin rileva automaticamente la zona Gauss-Boaga
+leggendo la prima coordinata X del file:
+<ul>
+  <li>X tra 1.100.000 e 1.900.000 → <b>EPSG:3003</b> (Monte Mario / Italy zone 1, nord-ovest Italia)</li>
+  <li>X tra 2.100.000 e 2.900.000 → <b>EPSG:3004</b> (Monte Mario / Italy zone 2, centro-sud Italia)</li>
+</ul>
+Il CRS rilevato è riportato nel log (<code>ℹ Autodetect CRS</code>) ed eventualmente sovrascrive
+la selezione manuale nella dialog.
+</p>
+<p>
+<b>CXF storici (Cassini-Soldner):</b> se le coordinate sono piccole (catasto storico), espandi la sezione
 <b>Cassini-Soldner</b> e attiva la spunta: il plugin leggerà automaticamente
 l'origine del comune dal file <code>Italia_CS_PRJ_srtext.csv</code> incluso nel plugin
 e trasformerà le coordinate nel CRS target scelto.

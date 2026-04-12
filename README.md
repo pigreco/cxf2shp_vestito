@@ -51,12 +51,16 @@ I layer vengono inseriti nel gruppo **"Catasto Vestito"** con stili QML preimpos
 
 Il plugin gestisce due famiglie di file CXF:
 
-| Tipo | Periodo | Coordinate tipiche | Come usare |
+| Tipo | Periodo | Coordinate X tipiche | Come usare |
 |---|---|---|---|
-| Moderno | ~2010 → oggi | X ≈ 1.400.000–1.900.000 | Selezionare CRS sorgente (EPSG:3003 o 3004) |
-| Storico | precedente | X ≈ ±poche migliaia | Attivare "Cassini-Soldner" + scegliere CRS target |
+| Moderno | ~2010 → oggi | 1.100.000 – 2.900.000 | Autodetect EPSG:3003/3004 |
+| Storico | precedente | ±poche migliaia | Attivare "Cassini-Soldner" + scegliere CRS target |
 
-**Modalità CXF moderni (Monte Mario):** selezionare il CRS del file sorgente — le coordinate vengono copiate senza trasformazione.
+**Modalità CXF moderni (Roma 40 — autodetect):** il plugin rileva automaticamente la zona Gauss-Boaga dalla prima coordinata X del file:
+- X < 2.000.000 → **EPSG:3003** (Monte Mario / Italy zone 1, nord-ovest Italia)
+- X > 2.000.000 → **EPSG:3004** (Monte Mario / Italy zone 2, centro-sud Italia)
+
+Il CRS rilevato viene riportato nel log e sovrascrive automaticamente la selezione manuale.
 
 **Modalità Cassini-Soldner:** espandere la sezione avanzata e attivare il checkbox. Il plugin identifica automaticamente l'origine comunale dal codice nel file CXF, la cerca nella tabella bundled (`Italia_CS_PRJ_srtext.csv`, ~8.000 Comuni) e trasforma le coordinate nel CRS target scelto (EPSG:4326, EPSG:3003, UTM, ecc.). Il log riporta il codice catastale, il CRS target e la stringa PROJ usata per ogni foglio.
 
@@ -84,6 +88,10 @@ cxf2shp_vestito/
 ```
 
 ## Changelog
+
+### 2.0
+- Autodetect CRS per CXF moderni (Roma 40): rileva automaticamente **EPSG:3003** o **EPSG:3004** dalla prima coordinata X del file (soglia 2.000.000 m)
+- Il CRS rilevato sovrascrive la selezione manuale con log esplicito nel pannello di output
 
 ### 1.6
 - Pulsante **? Guida** nel dialogo: apre la guida in linea da file esterno `help.html`
