@@ -87,6 +87,42 @@ CS_LOOKUP, CS_DUPLICATES = _load_cs_lookup()
 
 
 # =====================================================================
+# AUTODETECT CRS DA COORDINATE CXF (Roma 40: EPSG:3003 / EPSG:3004)
+# =====================================================================
+
+def _detect_roma40_crs(file_path):
+    """Rileva automaticamente EPSG:3003 o EPSG:3004 leggendo la prima
+    coordinata X del file CXF.
+
+    Logica: le due zone Gauss-Boaga hanno fasce X non sovrapposte:
+      - EPSG:3003 (zona Ovest, meridiano 9°E, false easting 1.500.000):
+            X ≈ 1.100.000 – 1.900.000 m
+      - EPSG:3004 (zona Est,  meridiano 15°E, false easting 2.520.000):
+            X ≈ 2.100.000 – 2.900.000 m
+    Soglia di separazione: 2.000.000 m.
+
+    Restituisce 'EPSG:3003', 'EPSG:3004', oppure None se non rilevato.
+    """
+    try:
+        with open(file_path, 'r', encoding='ascii', errors='ignore') as f:
+            for raw in f:
+                line = raw.strip()
+                if not line:
+                    continue
+                try:
+                    val = float(line)
+                except ValueError:
+                    continue
+                if val > 2_000_000:
+                    return 'EPSG:3004'
+                if val > 1_000_000:
+                    return 'EPSG:3003'
+    except OSError:
+        pass
+    return None
+
+
+# =====================================================================
 # THREAD DI CONVERSIONE
 # =====================================================================
 
@@ -330,6 +366,23 @@ class ConversionThread(QThread):
             if self.use_cassini:
                 self.log.emit(f"Modalità: Cassini-Soldner → {self.crs_authid}")
             else:
+                # Autodetect Roma 40 zone (EPSG:3003 / EPSG:3004) dal primo file
+                first_cxf = os.path.join(self.folder_path, cxf_files[0])
+                detected = _detect_roma40_crs(first_cxf)
+                if detected:
+                    if detected != self.crs_authid:
+                        self.log.emit(
+                            f"ℹ Autodetect CRS: rilevato {detected} "
+                            f"(sovrascrive la selezione manuale {self.crs_authid})"
+                        )
+                    else:
+                        self.log.emit(f"ℹ Autodetect CRS: confermato {detected}")
+                    self.crs_authid = detected
+                else:
+                    self.log.emit(
+                        f"ℹ Autodetect CRS: nessuna coordinata riconoscibile, "
+                        f"uso {self.crs_authid}"
+                    )
                 self.log.emit(f"Sistema di riferimento: {self.crs_authid}")
             self.progress.emit(10)
 

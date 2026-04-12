@@ -3,7 +3,7 @@ name=CXF to Shape Vestito
 qgisMinimumVersion=3.20
 qgisMaximumVersion=4.99
 description=Converte file CXF catastali italiani in Shapefile o GeoPackage con stili preimpostati
-version=1.9
+version=2.0
 supportsQt6=True
 author=Salvatore Fiandaca
 email=pigrecoinfinito@gmail.com
@@ -13,6 +13,7 @@ about=Plugin per la conversione di file CXF (formato catastale italiano Agenzia 
     Simboli, Fiduciali e Testi, organizzati nel gruppo "Catasto Vestito" in QGIS.
     Supporto CXF storici Cassini-Soldner con trasformazione automatica tramite tabella
     delle origini comunali bundled (Italia_CS_PRJ_srtext.csv, ~8.000 Comuni italiani).
+    Per CXF moderni (Roma 40): rilevamento automatico EPSG:3003/3004 dalla prima coordinata X.
     Plugin sviluppato con il supporto di Claude AI (Anthropic).
     
     ENGLISH:
@@ -22,6 +23,7 @@ about=Plugin per la conversione di file CXF (formato catastale italiano Agenzia 
     Symbols, Fiducials and Texts, organized in the "Catasto Vestito" group in QGIS.
     Support for historical Cassini-Soldner CXF with automatic transformation via bundled
     municipal origins table (Italia_CS_PRJ_srtext.csv, ~8,000 Italian Municipalities).
+    Modern CXF (Roma 40): automatic EPSG:3003/3004 detection from first X coordinate.
     Plugin developed with Claude AI (Anthropic) support.
 tracker=https://github.com/pigreco/cxf2shp_vestito/issues
 repository=https://github.com/pigreco/cxf2shp_vestito
@@ -34,6 +36,7 @@ experimental=False
 deprecated=False
 server=False
 changelog=
+    2.0 Autodetect CRS Roma 40: rilevamento automatico EPSG:3003/3004 dalla prima coordinata X del CXF
     1.9 Porting QGIS 4 / Qt6 / PyQt6: enum qualificati, QMetaType compat, supportsQt6=True, fix stylesheet tema scuro
     1.8 Fix struttura ZIP: aggiunta cartella radice richiesta da QGIS plugin repository
     1.7 Aggiunta descrizione in inglese nel metadata per maggiore accessibilità internazionale
