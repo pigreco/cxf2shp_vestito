@@ -87,22 +87,30 @@ CS_LOOKUP, CS_DUPLICATES = _load_cs_lookup()
 
 
 # =====================================================================
-# AUTODETECT CRS DA COORDINATE CXF (Roma 40: EPSG:3003 / EPSG:3004)
+# AUTODETECT CRS DA COORDINATE CXF
 # =====================================================================
 
-def _detect_roma40_crs(file_path):
-    """Rileva automaticamente EPSG:3003 o EPSG:3004 leggendo la prima
-    coordinata X del file CXF.
+def _detect_cxf_crs(file_path):
+    """Rileva automaticamente il CRS del file CXF analizzando i valori numerici.
 
-    Logica: le due zone Gauss-Boaga hanno fasce X non sovrapposte:
+    Legge tutto il file. Se trova un valore > 1.000.000 (coordinate Gauss-Boaga)
+    ritorna subito EPSG:3003/3004. Solo se nessun valore > 1M viene trovato,
+    controlla se ci sono coordinate decimali nell'intervallo lat/lon Italia (5–50°)
+    per rilevare CXF in coordinate geografiche ETRF2000/RDN2008.
+
+    Logica Gauss-Boaga (EPSG:3003/3004):
       - EPSG:3003 (zona Ovest, meridiano 9°E, false easting 1.500.000):
             X ≈ 1.100.000 – 1.900.000 m
       - EPSG:3004 (zona Est,  meridiano 15°E, false easting 2.520.000):
             X ≈ 2.100.000 – 2.900.000 m
-    Soglia di separazione: 2.000.000 m.
 
-    Restituisce 'EPSG:3003', 'EPSG:3004', oppure None se non rilevato.
+    Logica geografica (EPSG:6706 RDN2008 ≈ ETRF2000):
+      - lon Italia ≈ 6–19°, lat Italia ≈ 36–48° → primo float decimale in 5–50°
+      - I conteggi di vertici (interi) vengono ignorati grazie al check decimale.
+
+    Restituisce 'EPSG:3003', 'EPSG:3004', 'EPSG:6706', oppure None se non rilevato.
     """
+    geo_candidate = False
     try:
         with open(file_path, 'r', encoding='ascii', errors='ignore') as f:
             for raw in f:
@@ -117,9 +125,17 @@ def _detect_roma40_crs(file_path):
                     return 'EPSG:3004'
                 if val > 1_000_000:
                     return 'EPSG:3003'
+                # Float decimale nell'intervallo lat/lon Italia → candidato ETRF2000 geografico.
+                # Interi (conteggi vertici) esclusi dal controllo abs(val - round(val)) > 0.001.
+                if not geo_candidate and 5.0 < val < 50.0 and abs(val - round(val)) > 0.001:
+                    geo_candidate = True
     except OSError:
         pass
-    return None
+    return 'EPSG:6706' if geo_candidate else None
+
+
+# Alias per compatibilità con log message esistenti
+_detect_roma40_crs = _detect_cxf_crs
 
 
 # =====================================================================
@@ -366,9 +382,9 @@ class ConversionThread(QThread):
             if self.use_cassini:
                 self.log.emit(f"Modalità: Cassini-Soldner → {self.crs_authid}")
             else:
-                # Autodetect Roma 40 zone (EPSG:3003 / EPSG:3004) dal primo file
+                # Autodetect CRS dal primo file CXF
                 first_cxf = os.path.join(self.folder_path, cxf_files[0])
-                detected = _detect_roma40_crs(first_cxf)
+                detected = _detect_cxf_crs(first_cxf)
                 if detected:
                     if detected != self.crs_authid:
                         self.log.emit(
@@ -579,8 +595,9 @@ class Cxf2ShpVestitoDialog(QDialog):
             "Attiva se i file CXF contengono coordinate Cassini-Soldner (catasto storico).\n"
             "Le coordinate vengono trasformate usando la tabella delle origini comunali\n"
             "bundled nel plugin (Italia_CS_PRJ_srtext.csv).\n\n"
-            "CXF storici: coordinate X/Y ≈ ±poche migliaia di metri (piccoli valori)\n"
-            "CXF moderni: coordinate X ≈ 1.400.000–1.900.000 (Monte Mario)"
+            "CXF storici (Cassini): coordinate X/Y ≈ ±poche migliaia di metri (piccoli valori)\n"
+            "CXF Roma 40 (Gauss-Boaga): coordinate X ≈ 1.400.000–2.800.000 (Monte Mario)\n"
+            "CXF moderni (ETRF2000/RDN2008): coordinate in gradi decimali ≈ 6–19° lon, 36–48° lat"
         )
         self.chk_cassini.toggled.connect(self._on_cassini_toggled)
         cs_layout.addWidget(self.chk_cassini, 0, 0, 1, 2)
@@ -591,7 +608,9 @@ class Cxf2ShpVestitoDialog(QDialog):
         self.crs_widget.setCrs(QgsCoordinateReferenceSystem("EPSG:3003"))
         self.crs_widget.setToolTip(
             "EPSG:3003 = Monte Mario / Italy zone 1 (nord Italia)\n"
-            "EPSG:3004 = Monte Mario / Italy zone 2 (sud Italia)"
+            "EPSG:3004 = Monte Mario / Italy zone 2 (sud Italia)\n"
+            "EPSG:6706 = RDN2008 geografico (ETRF2000, CXF moderni in gradi decimali)\n\n"
+            "Rilevato automaticamente; modificabile solo se l'autodetect fallisce."
         )
         cs_layout.addWidget(self.crs_widget, 1, 1)
 
@@ -676,7 +695,9 @@ class Cxf2ShpVestitoDialog(QDialog):
             self.lbl_crs.setText("CRS sorgente del file CXF:")
             self.crs_widget.setToolTip(
                 "EPSG:3003 = Monte Mario / Italy zone 1 (nord Italia)\n"
-                "EPSG:3004 = Monte Mario / Italy zone 2 (sud Italia)"
+                "EPSG:3004 = Monte Mario / Italy zone 2 (sud Italia)\n"
+                "EPSG:6706 = RDN2008 geografico (ETRF2000, CXF moderni in gradi decimali)\n\n"
+                "Rilevato automaticamente; modificabile solo se l'autodetect fallisce."
             )
 
     def _browse_folder(self):
