@@ -90,51 +90,93 @@ CS_LOOKUP, CS_DUPLICATES = _load_cs_lookup()
 # AUTODETECT CRS DA COORDINATE CXF
 # =====================================================================
 
+# Longitudine centrale di ogni zona RDN2008/UTM usata in Italia
+_RDN2008_ZONES = [
+    ('EPSG:7791',  5.5, 12.5),   # zone 32N  (CM 9°E,  nord-ovest Italia)
+    ('EPSG:7792', 11.5, 18.5),   # zone 33N  (CM 15°E, centro-Italia)
+    ('EPSG:7793', 17.5, 24.5),   # zone 34N  (CM 21°E, estremo sud-est)
+]
+
+
+def _detect_rdn2008_zone(easting, northing):
+    """Retroproietta (easting, northing) in WGS84 e restituisce l'EPSG RDN2008/UTM
+    corrispondente (7791/7792/7793), oppure None se nessuna zona è compatibile.
+    Usato quando il northing > 1M suggerisce UTM invece di Gauss-Boaga.
+    """
+    wgs84 = QgsCoordinateReferenceSystem("EPSG:4326")
+    for epsg, lon_min, lon_max in _RDN2008_ZONES:
+        src = QgsCoordinateReferenceSystem(epsg)
+        t = QgsCoordinateTransform(src, wgs84, QgsCoordinateTransformContext())
+        try:
+            pt = t.transform(QgsPointXY(easting, northing))
+            if lon_min <= pt.x() <= lon_max and 35.0 <= pt.y() <= 48.0:
+                return epsg
+        except Exception:
+            pass
+    return None
+
+
 def _detect_cxf_crs(file_path):
     """Rileva automaticamente il CRS del file CXF analizzando i valori numerici.
 
-    Legge tutto il file. Se trova un valore > 1.000.000 (coordinate Gauss-Boaga)
-    ritorna subito EPSG:3003/3004. Solo se nessun valore > 1M viene trovato,
-    controlla se ci sono coordinate decimali nell'intervallo lat/lon Italia (5–50°)
-    per rilevare CXF in coordinate geografiche ETRF2000/RDN2008.
+    Legge il file riga per riga tenendo traccia del valore precedente per formare
+    coppie (X, Y). La logica di rilevamento:
 
-    Logica Gauss-Boaga (EPSG:3003/3004):
-      - EPSG:3003 (zona Ovest, meridiano 9°E, false easting 1.500.000):
-            X ≈ 1.100.000 – 1.900.000 m
-      - EPSG:3004 (zona Est,  meridiano 15°E, false easting 2.520.000):
-            X ≈ 2.100.000 – 2.900.000 m
+    Gauss-Boaga Roma 40 (EPSG:3003/3004):
+      - EPSG:3003 (zona Ovest, CM 9°E,  false easting 1.500.000): X ≈ 1.1M–1.9M
+      - EPSG:3004 (zona Est,  CM 15°E, false easting 2.520.000): X ≈ 2.1M–2.9M
+      - Rilevato quando il valore corrente > 1M E il precedente NON è un easting UTM.
 
-    Logica geografica (EPSG:6706 RDN2008 ≈ ETRF2000):
-      - lon Italia ≈ 6–19°, lat Italia ≈ 36–48° → primo float decimale in 5–50°
-      - I conteggi di vertici (interi) vengono ignorati grazie al check decimale.
+    RDN2008/UTM (EPSG:7791/7792/7793):
+      - Easting ≈ 100.000–900.000, northing ≈ 4.000.000–5.300.000
+      - Quando northing > 1M e il valore precedente è in range easting UTM (100k–1M),
+        si retroproietta in WGS84 per determinare la zona (32N/33N/34N).
 
-    Restituisce 'EPSG:3003', 'EPSG:3004', 'EPSG:6706', oppure None se non rilevato.
+    RDN2008 geografico (EPSG:6706 ≈ ETRF2000):
+      - lon Italia ≈ 6–19°, lat Italia ≈ 36–48° → float decimale in 5–50°
+      - Rilevato solo se nessun valore > 1M è presente nel file.
+      - I conteggi di vertici (interi) sono esclusi con abs(val - round(val)) > 0.001.
+
+    Restituisce 'EPSG:3003', 'EPSG:3004', 'EPSG:7791', 'EPSG:7792', 'EPSG:7793',
+    'EPSG:6706', oppure None se non rilevato.
     """
     geo_candidate = False
+    prev_val = None
     try:
         with open(file_path, 'r', encoding='ascii', errors='ignore') as f:
             for raw in f:
                 line = raw.strip()
                 if not line:
+                    prev_val = None
                     continue
                 try:
                     val = float(line)
                 except ValueError:
+                    prev_val = None
                     continue
-                if val > 2_000_000:
-                    return 'EPSG:3004'
+
                 if val > 1_000_000:
-                    return 'EPSG:3003'
+                    # Potrebbe essere northing UTM (≈4M–5.3M) con easting nel prev_val,
+                    # oppure X Gauss-Boaga (≈1.1M–2.9M).
+                    if prev_val is not None and 100_000 < prev_val < 1_000_000:
+                        zone = _detect_rdn2008_zone(prev_val, val)
+                        if zone:
+                            return zone
+                    # Nessuna coppia UTM valida → Gauss-Boaga
+                    return 'EPSG:3004' if val > 2_000_000 else 'EPSG:3003'
+
                 # Float decimale nell'intervallo lat/lon Italia → candidato ETRF2000 geografico.
                 # Interi (conteggi vertici) esclusi dal controllo abs(val - round(val)) > 0.001.
                 if not geo_candidate and 5.0 < val < 50.0 and abs(val - round(val)) > 0.001:
                     geo_candidate = True
+
+                prev_val = val
     except OSError:
         pass
     return 'EPSG:6706' if geo_candidate else None
 
 
-# Alias per compatibilità con log message esistenti
+# Alias per compatibilità con chiamate esterne eventualmente esistenti
 _detect_roma40_crs = _detect_cxf_crs
 
 
@@ -597,7 +639,8 @@ class Cxf2ShpVestitoDialog(QDialog):
             "bundled nel plugin (Italia_CS_PRJ_srtext.csv).\n\n"
             "CXF storici (Cassini): coordinate X/Y ≈ ±poche migliaia di metri (piccoli valori)\n"
             "CXF Roma 40 (Gauss-Boaga): coordinate X ≈ 1.400.000–2.800.000 (Monte Mario)\n"
-            "CXF moderni (ETRF2000/RDN2008): coordinate in gradi decimali ≈ 6–19° lon, 36–48° lat"
+            "CXF ETRF2000/UTM (AdE moderni): easting ≈ 100.000–900.000, northing ≈ 4M–5.3M\n"
+            "CXF ETRF2000 geografico: coordinate in gradi decimali ≈ 6–19° lon, 36–48° lat"
         )
         self.chk_cassini.toggled.connect(self._on_cassini_toggled)
         cs_layout.addWidget(self.chk_cassini, 0, 0, 1, 2)
@@ -609,7 +652,10 @@ class Cxf2ShpVestitoDialog(QDialog):
         self.crs_widget.setToolTip(
             "EPSG:3003 = Monte Mario / Italy zone 1 (nord Italia)\n"
             "EPSG:3004 = Monte Mario / Italy zone 2 (sud Italia)\n"
-            "EPSG:6706 = RDN2008 geografico (ETRF2000, CXF moderni in gradi decimali)\n\n"
+            "EPSG:7791 = RDN2008 / UTM zone 32N (nord-ovest Italia)\n"
+            "EPSG:7792 = RDN2008 / UTM zone 33N (centro Italia)\n"
+            "EPSG:7793 = RDN2008 / UTM zone 34N (estremo sud-est)\n"
+            "EPSG:6706 = RDN2008 geografico (gradi decimali)\n\n"
             "Rilevato automaticamente; modificabile solo se l'autodetect fallisce."
         )
         cs_layout.addWidget(self.crs_widget, 1, 1)
