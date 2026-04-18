@@ -7,6 +7,7 @@ Autore: Fortunato Amore
 
 import csv
 import os
+import re
 import traceback
 
 from qgis.PyQt.QtWidgets import (
@@ -90,56 +91,67 @@ CS_LOOKUP, CS_DUPLICATES = _load_cs_lookup()
 # AUTODETECT CRS DA COORDINATE CXF
 # =====================================================================
 
-# Longitudine centrale di ogni zona RDN2008/UTM usata in Italia
-_RDN2008_ZONES = [
-    ('EPSG:7791',  5.5, 12.5),   # zone 32N  (CM 9°E,  nord-ovest Italia)
-    ('EPSG:7792', 11.5, 18.5),   # zone 33N  (CM 15°E, centro-Italia)
-    ('EPSG:7793', 17.5, 24.5),   # zone 34N  (CM 21°E, estremo sud-est)
-]
+def _parse_sr_txt(folder_path):
+    """Legge _SistemaDiRappresentazione.txt (distribuito dall'AdE con i CXF) ed
+    estrae il codice EPSG del sistema di rappresentazione richiesto.
 
+    Il file contiene una riga del tipo:
+      'Sistema di Rappresentazione richiesto: UTM - ETRF2000 | FUSO 33 - EPSG: 7792'
+    Il primo codice EPSG trovato è quello richiesto (output).
 
-def _detect_rdn2008_zone(easting, northing):
-    """Retroproietta (easting, northing) in WGS84 e restituisce l'EPSG RDN2008/UTM
-    corrispondente (7791/7792/7793), oppure None se nessuna zona è compatibile.
-    Usato quando il northing > 1M suggerisce UTM invece di Gauss-Boaga.
+    Restituisce 'EPSG:XXXX' oppure None se il file non esiste o non contiene EPSG.
     """
-    wgs84 = QgsCoordinateReferenceSystem("EPSG:4326")
-    for epsg, lon_min, lon_max in _RDN2008_ZONES:
-        src = QgsCoordinateReferenceSystem(epsg)
-        t = QgsCoordinateTransform(src, wgs84, QgsCoordinateTransformContext())
-        try:
-            pt = t.transform(QgsPointXY(easting, northing))
-            if lon_min <= pt.x() <= lon_max and 35.0 <= pt.y() <= 48.0:
-                return epsg
-        except Exception:
-            pass
+    sr_path = os.path.join(folder_path, '_SistemaDiRappresentazione.txt')
+    if not os.path.exists(sr_path):
+        return None
+    try:
+        with open(sr_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+        m = re.search(r'EPSG[:\s]+(\d+)', content, re.IGNORECASE)
+        if m:
+            return f'EPSG:{m.group(1)}'
+    except OSError:
+        pass
     return None
 
 
 def _detect_cxf_crs(file_path):
-    """Rileva automaticamente il CRS del file CXF analizzando i valori numerici.
+    """Rileva automaticamente il CRS del file CXF.
 
-    Legge il file riga per riga tenendo traccia del valore precedente per formare
-    coppie (X, Y). La logica di rilevamento:
+    Strategia (in ordine di priorità):
 
-    Gauss-Boaga Roma 40 (EPSG:3003/3004):
-      - EPSG:3003 (zona Ovest, CM 9°E,  false easting 1.500.000): X ≈ 1.1M–1.9M
-      - EPSG:3004 (zona Est,  CM 15°E, false easting 2.520.000): X ≈ 2.1M–2.9M
-      - Rilevato quando il valore corrente > 1M E il precedente NON è un easting UTM.
+    1. _SistemaDiRappresentazione.txt nella stessa cartella del CXF (fonte AdE,
+       autorevole per tutti i casi: Roma 40, ETRF2000/UTM, ETRF2000 geografico).
 
-    RDN2008/UTM (EPSG:7791/7792/7793):
-      - Easting ≈ 100.000–900.000, northing ≈ 4.000.000–5.300.000
-      - Quando northing > 1M e il valore precedente è in range easting UTM (100k–1M),
-        si retroproietta in WGS84 per determinare la zona (32N/33N/34N).
+    2. Analisi dei valori numerici nel file CXF (fallback):
 
-    RDN2008 geografico (EPSG:6706 ≈ ETRF2000):
-      - lon Italia ≈ 6–19°, lat Italia ≈ 36–48° → float decimale in 5–50°
-      - Rilevato solo se nessun valore > 1M è presente nel file.
-      - I conteggi di vertici (interi) sono esclusi con abs(val - round(val)) > 0.001.
+       Gauss-Boaga Roma 40 (EPSG:3003/3004):
+         - EPSG:3003 (zona Ovest, false easting 1.500.000): X ≈ 1.1M–1.9M
+         - EPSG:3004 (zona Est,  false easting 2.520.000): X ≈ 2.1M–2.9M
+         - Rilevato quando val > 1M e il precedente NON è in range easting UTM.
 
-    Restituisce 'EPSG:3003', 'EPSG:3004', 'EPSG:7791', 'EPSG:7792', 'EPSG:7793',
-    'EPSG:6706', oppure None se non rilevato.
+       RDN2008/UTM (EPSG:7791/7792/7793):
+         - Easting ≈ 100k–900k, northing ≈ 4M–5.3M.
+         - Quando northing > 1M e prev è in range easting UTM (100k–1M),
+           NON si può disambiguare la zona dalle sole coordinate (stesso easting
+           riproiettato in zona 32N/33N/34N dà longitudine "valida" per tutte).
+         - Senza il file SR si restituisce None: l'utente deve selezionare
+           manualmente il CRS nel widget.
+
+       RDN2008 geografico (EPSG:6706 ≈ ETRF2000):
+         - lon Italia ≈ 6–19°, lat Italia ≈ 36–48° → float decimale in 5–50°.
+         - Rilevato solo se nessun valore > 1M è presente nel file.
+         - I conteggi di vertici (interi) sono filtrati con abs(val-round(val))>0.001.
+
+    Restituisce 'EPSG:XXXX' oppure None se non rilevato.
     """
+    # 1. File SR autorevole (AdE)
+    folder = os.path.dirname(file_path)
+    sr_epsg = _parse_sr_txt(folder)
+    if sr_epsg:
+        return sr_epsg
+
+    # 2. Analisi coordinate
     geo_candidate = False
     prev_val = None
     try:
@@ -156,13 +168,10 @@ def _detect_cxf_crs(file_path):
                     continue
 
                 if val > 1_000_000:
-                    # Potrebbe essere northing UTM (≈4M–5.3M) con easting nel prev_val,
-                    # oppure X Gauss-Boaga (≈1.1M–2.9M).
+                    # Se prev è easting UTM (100k–1M) → northing UTM, zona ignota.
                     if prev_val is not None and 100_000 < prev_val < 1_000_000:
-                        zone = _detect_rdn2008_zone(prev_val, val)
-                        if zone:
-                            return zone
-                    # Nessuna coppia UTM valida → Gauss-Boaga
+                        return None  # UTM ETRF2000: zona non determinabile senza SR file
+                    # Altrimenti: X Gauss-Boaga
                     return 'EPSG:3004' if val > 2_000_000 else 'EPSG:3003'
 
                 # Float decimale nell'intervallo lat/lon Italia → candidato ETRF2000 geografico.
@@ -426,19 +435,23 @@ class ConversionThread(QThread):
             else:
                 # Autodetect CRS dal primo file CXF
                 first_cxf = os.path.join(self.folder_path, cxf_files[0])
+                # Controlla prima se esiste il file SR (fonte AdE autorevole)
+                sr_epsg = _parse_sr_txt(self.folder_path)
                 detected = _detect_cxf_crs(first_cxf)
                 if detected:
+                    source = "da _SistemaDiRappresentazione.txt" if sr_epsg else "da coordinate"
                     if detected != self.crs_authid:
                         self.log.emit(
-                            f"ℹ Autodetect CRS: rilevato {detected} "
+                            f"ℹ Autodetect CRS ({source}): rilevato {detected} "
                             f"(sovrascrive la selezione manuale {self.crs_authid})"
                         )
                     else:
-                        self.log.emit(f"ℹ Autodetect CRS: confermato {detected}")
+                        self.log.emit(f"ℹ Autodetect CRS ({source}): confermato {detected}")
                     self.crs_authid = detected
                 else:
                     self.log.emit(
-                        f"ℹ Autodetect CRS: nessuna coordinata riconoscibile, "
+                        f"ℹ Autodetect CRS: CRS non determinato automaticamente "
+                        f"(assente _SistemaDiRappresentazione.txt o coordinate non riconoscibili) — "
                         f"uso {self.crs_authid}"
                     )
                 self.log.emit(f"Sistema di riferimento: {self.crs_authid}")
