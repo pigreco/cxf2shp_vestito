@@ -26,13 +26,14 @@ from qgis.core import (
 )
 from qgis.gui import QgsProjectionSelectionWidget, QgsCollapsibleGroupBox
 
-# Compatibilità Qt5/Qt6: QMetaType sostituisce QVariant.Type in PyQt6
-try:
+# Compatibilità Qt5/Qt6: QgsField accetta QMetaType.Type solo su Qt6
+from qgis.PyQt.QtCore import qVersion
+if int(qVersion().split('.')[0]) >= 6:
     from qgis.PyQt.QtCore import QMetaType
     _F_STR = QMetaType.Type.QString
     _F_DBL = QMetaType.Type.Double
     _F_INT = QMetaType.Type.Int
-except (ImportError, AttributeError):
+else:
     _F_STR = QVariant.String
     _F_DBL = QVariant.Double
     _F_INT = QVariant.Int
