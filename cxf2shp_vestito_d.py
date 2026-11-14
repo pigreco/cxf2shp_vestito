@@ -25,16 +25,15 @@ from qgis.core import (
 )
 from qgis.gui import QgsProjectionSelectionWidget, QgsCollapsibleGroupBox
 
-# Compatibilità Qt5/Qt6: QMetaType sostituisce QVariant.Type in PyQt6
+# Compatibilità Qt5/Qt6 e versioni QGIS: QgsField accetta QVariant.Type (vecchio)
+# oppure QMetaType.Type (QGIS >= 3.38 / Qt6). Si prova prima il vecchio tipo.
+from qgis.PyQt.QtCore import QMetaType
 try:
-    from qgis.PyQt.QtCore import QMetaType
-    _F_STR = QMetaType.Type.QString
-    _F_DBL = QMetaType.Type.Double
-    _F_INT = QMetaType.Type.Int
-except (ImportError, AttributeError):
-    _F_STR = QVariant.String
-    _F_DBL = QVariant.Double
-    _F_INT = QVariant.Int
+    QgsField("t", QVariant.String)
+    _F_STR, _F_DBL, _F_INT = QVariant.String, QVariant.Double, QVariant.Int
+except TypeError:
+    _mt = getattr(QMetaType, "Type", QMetaType)
+    _F_STR, _F_DBL, _F_INT = _mt.QString, _mt.Double, _mt.Int
 
 
 # =====================================================================
