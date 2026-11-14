@@ -89,6 +89,9 @@ cxf2shp_vestito/
 
 ## Changelog
 
+### 2.1
+- Fix #9: errore `QgsField(): arguments did not match any overloaded call` durante la conversione su alcune versioni di QGIS; il tipo dei campi (`QVariant`/`QMetaType`) viene ora rilevato automaticamente
+
 ### 2.0
 - Autodetect CRS per CXF moderni (Roma 40): rileva automaticamente **EPSG:3003** o **EPSG:3004** dalla prima coordinata X del file (soglia 2.000.000 m)
 - Il CRS rilevato sovrascrive la selezione manuale con log esplicito nel pannello di output

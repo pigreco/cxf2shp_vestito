@@ -3,7 +3,7 @@ name=CXF to Shape Vestito
 qgisMinimumVersion=3.20
 qgisMaximumVersion=4.99
 description=Converte file CXF catastali italiani in Shapefile o GeoPackage con stili preimpostati
-version=2.0
+version=2.1
 supportsQt6=True
 author=Salvatore Fiandaca
 email=pigrecoinfinito@gmail.com
@@ -36,6 +36,7 @@ experimental=False
 deprecated=False
 server=False
 changelog=
+    2.1 Fix #9: errore QgsField() "arguments did not match any overloaded call" su alcune versioni di QGIS (tipo campo QVariant/QMetaType)
     2.0 Autodetect CRS Roma 40: rilevamento automatico EPSG:3003/3004 dalla prima coordinata X del CXF
     1.9 Porting QGIS 4 / Qt6 / PyQt6: enum qualificati, QMetaType compat, supportsQt6=True, fix stylesheet tema scuro
     1.8 Fix struttura ZIP: aggiunta cartella radice richiesta da QGIS plugin repository
